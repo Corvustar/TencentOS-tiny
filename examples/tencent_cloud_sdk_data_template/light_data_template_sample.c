@@ -14,7 +14,7 @@
  */
 
 #include "qcloud.h"
-#include "tos.h"
+#include "tos_k.h"
 
 #if (QCLOUD_CFG_EVENT_EN > 0u)
 
@@ -128,8 +128,8 @@ typedef enum light_color_en {
 } light_color_t; // a enum to describe the color of a light
 
 typedef enum light_switch_state_en {
-    LIGHT_SWTICH_STATE_OFF    = 0,
-    LIGHT_SWTICH_STATE_ON     = 1,
+    LIGHT_SWITCH_STATE_OFF    = 0,
+    LIGHT_SWITCH_STATE_ON     = 1,
 } light_switch_state_t; // a enum to describe the switch state of a light
 
 typedef enum property_state_en {
@@ -174,7 +174,7 @@ static void data_template_init(qcloud_device_t *device)
 {
     memset((void *)&light_profile, 0, sizeof(light_profile_t));
 
-    light_profile.switch_state  = LIGHT_SWTICH_STATE_OFF;
+    light_profile.switch_state  = LIGHT_SWITCH_STATE_OFF;
     light_profile.color         = LIGHT_COLOR_RED;
     light_profile.brightness    = 0.0;
 
@@ -223,7 +223,7 @@ static void property_do_update(shadow_dev_property_t *property)
             break;
 
         case JSON_DATA_TYPE_STRING: // device name
-            /* å¦‚æžœå¤šä¸ªå­—ç¬¦ä¸²å±žæ€§,æ ¹æ®pProperty->keyå€¼åŒ¹é…ï¼Œå¤„ç†å­—ç¬¦ä¸² */
+            /* 如果多个字符串属性,根据pProperty->key值匹配，处理字符串 */
             if (strcmp("name", property->key) != 0) {
                 break;
             }
@@ -235,7 +235,7 @@ static void property_do_update(shadow_dev_property_t *property)
     }
 }
 
-/* Èç¹ûÓÐ×Ô¶¨ÒåµÄ×Ö·û´®»òÕßjson£¬ÐèÒªÔÚÕâÀï½âÎö */
+/* 如果有自定义的字符串或者json，需要在这里解析 */
 static qcloud_err_t property_update(const char *json_doc, shadow_dev_property_t *property)
 {
     QCLOUD_POINTER_SANITY_CHECK(json_doc, QCLOUD_ERR_INVAL);
@@ -263,13 +263,13 @@ static qcloud_err_t property_update(const char *json_doc, shadow_dev_property_t 
     return QCLOUD_ERR_SUCCESS;
 }
 
-/* æœåŠ¡ç«¯æœ‰æŽ§åˆ¶æ¶ˆæ¯ä¸‹å‘ï¼Œä¼šè§¦å‘è¿™é‡Œçš„deltaå›žè°ƒ */
+/* 服务端有控制消息下发，会触发这里的delta回调 */
 static void on_property_delta_handler(void *client, const char *json_doc, uint32_t json_doc_len, shadow_dev_property_t *property)
 {
     int i = 0;
 
     for (i = 0; i < LIGHT_PROPERTY_COUNT; ++i) {
-        /* ÆäËûÊý¾ÝÀàÐÍÒÑ¾­ÔÚ_handle_deltaÁ÷³ÌÍ³Ò»´¦ÀíÁË£¬×Ö·û´®ºÍjson´®ÐèÒªÔÚÕâÀï´¦Àí£¬ÒòÎªÖ»ÓÐ²úÆ·×Ô¼º²ÅÖªµÀstring/jsonµÄ×Ô¶¨Òå½âÎö */
+        /* 其他数据类型已经在_handle_delta流程统一处理了，字符串和json串需要在这里处理，因为只有产品自己才知道string/json的自定义解析 */
         if (strcmp(light_property_handler.property_wrappers[i].property.key, property->key) != 0) {
             continue;
         }
@@ -288,7 +288,7 @@ static void on_property_delta_handler(void *client, const char *json_doc, uint32
     QCLOUD_LOG_E("property=%s changed no match", property->key);
 }
 
-/* ×¢²áÊý¾ÝÄ£°åÊôÐÔ */
+/* 注册数据模板属性 */
 static qcloud_err_t data_template_property_register(qcloud_shadow_client_t *client)
 {
     int i = 0;
@@ -324,17 +324,17 @@ __weak void OLED_ShowString(int x, int y, uint8_t *str, int bold)
 // handle the light(simulated)
 static void light_change_color(const char *color)
 {
-    // ä½œä¸ºdemoï¼Œè¿™é‡Œç”¨oledå±å­—ç¬¦æ˜¾ç¤ºæ¥æ¨¡æ‹Ÿç¯é¢œè‰²çš„åˆ‡æ¢
-    // è¿™é‡Œåº”è¯¥ç”±ç”¨æˆ·å®žçŽ°ç¡¬ä»¶æ“ä½œä»£ç ï¼Œæ¥æ”¹å˜æ™ºèƒ½ç¯çš„é¢œè‰²
-    // æ­¤å¤„demoï¼Œåœ¨å¼€å‘æ¿æ˜¾ç¤ºå±ä¸Šæ˜¾ç¤ºå…·ä½“çš„é¢œè‰²
+    // 作为demo，这里用oled屏字符显示来模拟灯颜色的切换
+    // 这里应该由用户实现硬件操作代码，来改变智能灯的颜色
+    // 此处demo，在开发板显示屏上显示具体的颜色
     OLED_ShowString(0, 0, (uint8_t *)color, 8);
 }
 
 static void light_change_brightness(template_float_t brightness)
 {
-    // ä½œä¸ºdemoï¼Œè¿™é‡Œç”¨oledå±å­—ç¬¦æ˜¾ç¤ºæ¥æ¨¡æ‹Ÿç¯äº®åº¦çš„åˆ‡æ¢
-    // è¿™é‡Œåº”è¯¥ç”±ç”¨æˆ·å®žçŽ°ç¡¬ä»¶æ“ä½œä»£ç ï¼Œæ¥æ”¹å˜æ™ºèƒ½ç¯çš„äº®åº¦
-    // æ­¤å¤„demoï¼Œåœ¨å¼€å‘æ¿æ˜¾ç¤ºå±ä¸Šæ˜¾ç¤ºå…·ä½“çš„äº®åº¦
+    // 作为demo，这里用oled屏字符显示来模拟灯颜色的切换
+    // 这里应该由用户实现硬件操作代码，来改变智能灯的颜色
+    // 此处demo，在开发板显示屏上显示具体的颜色
     char brightness_str[12];
 
     snprintf(brightness_str, sizeof(brightness_str), "%f", brightness);
@@ -344,13 +344,13 @@ static void light_change_brightness(template_float_t brightness)
 
 static void light_power_on(void)
 {
-    // ä½œä¸ºdemoï¼Œè¿™é‡Œç”¨oledå±å­—ç¬¦æ˜¾ç¤ºæ¥æ¨¡æ‹Ÿç¯å¼€å…³çŠ¶æ€çš„åˆ‡æ¢
+    // 作为demo，这里用oled屏字符显示来模拟灯颜色的切换
     OLED_Clear();
 }
 
 static void light_power_off(void)
 {
-    // ä½œä¸ºdemoï¼Œè¿™é‡Œç”¨oledå±å­—ç¬¦æ˜¾ç¤ºæ¥æ¨¡æ‹Ÿç¯å¼€å…³çŠ¶æ€çš„åˆ‡æ¢
+    // 作为demo，这里用oled屏字符显示来模拟灯颜色的切换
     char *info = "light off";
     OLED_Clear();
     OLED_ShowString(0, 0, (uint8_t *)info, 16);
@@ -403,11 +403,12 @@ static void incoming_messsage_handler(void *client, void *context, mqtt_event_t 
     }
 }
 
-/* Ê¾ÀýµÆ¹â¿ØÖÆ´¦ÀíÂß¼­ */
+/* 示例灯光控制处理逻辑 */
 static void deal_down_stream_user_logic(void)
 {
     char *color_name;
 
+    /* 灯光颜色 */
     switch (light_profile.color) {
         case LIGHT_COLOR_RED:
             color_name = " RED ";
@@ -422,17 +423,19 @@ static void deal_down_stream_user_logic(void)
             break;
     }
 
-    if (light_profile.switch_state == LIGHT_SWTICH_STATE_ON) {
+    if (light_profile.switch_state == LIGHT_SWITCH_STATE_ON) {
+        /* 灯光开启式，按照控制参数展示 */
         light_power_on();
         light_change_color(color_name);
         light_change_brightness(light_profile.brightness);
     } else {
+        /* 灯光关闭展示 */
         light_power_off();
     }
 
 #if (QCLOUD_CFG_EVENT_EN > 0u)
     if (light_property_handler.property_wrappers_of.switch_state.state == PROPERTY_STATE_CHANGED) {
-        if (light_profile.switch_state == LIGHT_SWTICH_STATE_ON) {
+        if (light_profile.switch_state == LIGHT_SWITCH_STATE_ON) {
             strcpy(event_message, "light on");
             event_status = EVENT_STATUS_LIGHT_ON;
         } else {
@@ -445,14 +448,13 @@ static void deal_down_stream_user_logic(void)
 #endif
 }
 
-/* ÓÃ»§ÐèÒªÊµÏÖµÄÉÏÐÐÊý¾ÝµÄÒµÎñÂß¼­,´Ë´¦½ö¹©Ê¾Àý */
+/* 用户需要实现的上行数据的业务逻辑,此处仅供示例 */
 static void deal_up_stream_user_logic(shadow_dev_property_t *properties_report[], int *count)
 {
     int i, j;
 
     *count = 0;
 
-    /* ÌáÈ¡³ö·¢Éú±ä¸üÁËµÄÊôÐÔ£¬ÉÏ±¨µ½ÔÆ */
     for (i = 0, j = 0; i < LIGHT_PROPERTY_COUNT; ++i) {
         if (light_property_handler.property_wrappers[i].state == PROPERTY_STATE_CHANGED) {
             properties_report[j++] = &(light_property_handler.property_wrappers[i].property);
@@ -471,7 +473,7 @@ static void on_shadow_update_handler(void *client,
     QCLOUD_LOG_I("recv shadow update response, request state: %d", req_state);
 }
 
-/* 5s¶¨Ê±ÉÏ±¨ÊôÐÔ×´Ì¬,¿É¸ù¾ÝÒµÎñ²Ã¼ô£¬´Ë´¦½ö¹©Ê¾Àý */
+/* 5s定时上报属性状态,可根据业务裁剪，此处仅供示例 */
 qcloud_err_t timely_reporting(shadow_dev_property_t *properties_report[], osal_timer_t *report_timer)
 {
     int i;
@@ -512,10 +514,12 @@ int data_template_light_thread(void)
 
     qcloud_device_create(&device, "XC31USKYPL", "dev001", "Pz1wK0fVJHxSojqxDuuvmg==");
 
+    // init connection
     qcloud_shadow_client_create(&shadow_client, &device, incoming_messsage_handler, SHADOW_TYPE_TEMPLATE);
 
     light_power_off();
 
+    // init data template
     data_template_init(&device);
 
 #if (QCLOUD_CFG_EVENT_EN > 0u)
@@ -526,6 +530,7 @@ int data_template_light_thread(void)
     }
 #endif
 
+    // register data template propertys here
     rc = data_template_property_register(&shadow_client);
     if (rc == QCLOUD_ERR_SUCCESS) {
         QCLOUD_LOG_I("data template propertys register success");
@@ -535,13 +540,14 @@ int data_template_light_thread(void)
     }
 
 #define SHADOW_REQUEST_TIMEOUT          (10)    // in seconds
+    // 离线期间服务端可能有下行命令，此处实现同步。version同步后台非必要
     rc = qcloud_shadow_client_get_sync(&shadow_client, SHADOW_REQUEST_TIMEOUT);
     if (rc != QCLOUD_ERR_SUCCESS) {
         QCLOUD_LOG_E("device shadow get failed, err: %d", rc);
         return rc;
     }
 
-    // å±žæ€§å®šæ—¶ä¸ŠæŠ¥timerï¼Œå¯ä»¥æ ¹æ®ä¸šåŠ¡éœ€è¦è£å‰ªã€‚
+    // 属性定时上报timer，可以根据业务需要裁剪。
     osal_timer_init(&report_timer);
 
     while (qcloud_shadow_client_is_connected(&shadow_client) ||
@@ -556,21 +562,20 @@ int data_template_light_thread(void)
         } else if (rc != QCLOUD_ERR_SUCCESS && rc != QCLOUD_ERR_MQTT_RECONNECTED) {
 			QCLOUD_LOG_E("exit with error: %d", rc);
             break;
-		}
+	}
 
-        /* ·þÎñ¶ËÏÂÐÐÏûÏ¢£¬ÒµÎñ´¦ÀíÂß¼­1Èë¿Ú */
+        /* 服务端下行消息，业务处理逻辑1入口 */
         if (is_light_property_changed) {
-            // æœåŠ¡å™¨ä¸‹å‘äº†æŽ§åˆ¶æŒ‡ä»¤ï¼Œæ›´æ”¹äº†è®¾å¤‡çš„çŠ¶æ€
             deal_down_stream_user_logic();
 
-            /* ÒµÎñÂß¼­´¦ÀíÍêºóÐèÒªÍ¬²½Í¨Öª·þÎñ¶Ë:Éè±¸Êý¾ÝÒÑ¸üÐÂ£¬É¾³ýdseireÊý¾Ý */
+            /* 业务逻辑处理完后需要同步通知服务端:设备数据已更新，删除dseire数据 */
             rc = qcloud_shadow_client_desire_null_construct(&shadow_client, shadow_update_buffer, sizeof(shadow_update_buffer));
             if (rc == QCLOUD_ERR_SUCCESS) {
                 rc = qcloud_shadow_client_update_sync(&shadow_client, shadow_update_buffer, sizeof(shadow_update_buffer), 5);
                 if (rc == QCLOUD_ERR_SUCCESS) {
                     is_light_property_changed = QCLOUD_FALSE;
 
-                     // ÓÃ»§ÐèÒª¸ù¾ÝÒµÎñÇé¿öÐÞ¸ÄÉÏ±¨flagµÄ¸³ÖµÎ»ÖÃ,´Ë´¦½öÎªÊ¾Àý¡£
+                    // 用户需要根据业务情况修改上报flag的赋值位置,此处仅为示例。
                     is_new_property_reported = QCLOUD_TRUE;
                     QCLOUD_LOG_I("shadow update(desired) success");
                 } else {
@@ -581,9 +586,9 @@ int data_template_light_thread(void)
             }
         }
 
-        /* Éè±¸ÉÏÐÐÏûÏ¢,ÒµÎñÂß¼­2Èë¿Ú */
+        /* 设备上行消息,业务逻辑2入口 */
         if (is_new_property_reported) {
-            /* deltaÏûÏ¢ÊÇÊôÐÔµÄdesireºÍÊôÐÔµÄreportµÄ²îÒì¼¯£¬ÊÕµ½deseireÏûÏ¢´¦Àíºó£¬ÒªreportÊôÐÔµÄ×´Ì¬ */
+            /* delta消息是属性的desire和属性的report的差异集，收到deseire消息处理后，要report属性的状态 */
             deal_up_stream_user_logic(properties_report, &properties_report_count);
             if (properties_report_count > 0) {
                 rc = qcloud_shadow_client_report_construct_array(&shadow_client, shadow_update_buffer, sizeof(shadow_update_buffer),
@@ -627,7 +632,7 @@ int data_template_light_thread(void)
         }
 
 #if (QCLOUD_CFG_EVENT_EN > 0u)
-        // ÊÂ¼þÉÏ±¨
+        // 事件上报
         event_count = 0;
         event_flag = event_flag_get();
         if (EVENT_COUNTS > 0 && event_flag > 0) {

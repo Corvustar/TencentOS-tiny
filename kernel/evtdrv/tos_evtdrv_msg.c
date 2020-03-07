@@ -1,3 +1,20 @@
+/*----------------------------------------------------------------------------
+ * Tencent is pleased to support the open source community by making TencentOS
+ * available.
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company. All rights reserved.
+ * If you have downloaded a copy of the TencentOS binary from Tencent, please
+ * note that the TencentOS binary is licensed under the BSD 3-Clause License.
+ *
+ * If you have downloaded a copy of the TencentOS source code from Tencent,
+ * please note that TencentOS source code is licensed under the BSD 3-Clause
+ * License, except for the third-party components listed below which are
+ * subject to different license terms. Your integration of TencentOS into your
+ * own projects may require compliance with the BSD 3-Clause License, as well
+ * as the other licenses applicable to the third-party components included
+ * within TencentOS.
+ *---------------------------------------------------------------------------*/
+
 #include "tos_evtdrv.h"
 
 #if TOS_CFG_EVENT_DRIVEN_EN > 0u
@@ -72,13 +89,11 @@ __STATIC_INLINE__ void evtdrv_msg_prepare4use(evtdrv_msg_hdr_t *msg_hdr)
 __API__ evtdrv_msg_body_t tos_evtdrv_msg_recv(void)
 {
     TOS_CPU_CPSR_ALLOC();
-    k_list_t *curr, *next;
-    evtdrv_msg_hdr_t *msg_hdr = K_NULL;
+    evtdrv_msg_hdr_t *msg_hdr, *tmp;
 
     TOS_CPU_INT_DISABLE();
 
-    TOS_LIST_FOR_EACH_SAFE(curr, next, &evtdrv_msg_list) {
-        msg_hdr = TOS_LIST_ENTRY(curr, evtdrv_msg_hdr_t, list);
+    TOS_LIST_FOR_EACH_ENTRY_SAFE(msg_hdr, tmp, evtdrv_msg_hdr_t, list, &evtdrv_msg_list) {
         if (!evtdrv_task_is_self(msg_hdr->dst_task_id)) {
             continue;
         }
@@ -97,7 +112,7 @@ __API__ evtdrv_msg_body_t tos_evtdrv_msg_recv(void)
     return K_NULL;
 }
 
-__KERNEL__ void evtdrv_msg_init(void)
+__KNL__ void evtdrv_msg_init(void)
 {
     tos_list_init(&evtdrv_msg_list);
 }

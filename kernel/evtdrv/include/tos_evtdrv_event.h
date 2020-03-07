@@ -1,3 +1,20 @@
+/*----------------------------------------------------------------------------
+ * Tencent is pleased to support the open source community by making TencentOS
+ * available.
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company. All rights reserved.
+ * If you have downloaded a copy of the TencentOS binary from Tencent, please
+ * note that the TencentOS binary is licensed under the BSD 3-Clause License.
+ *
+ * If you have downloaded a copy of the TencentOS source code from Tencent,
+ * please note that TencentOS source code is licensed under the BSD 3-Clause
+ * License, except for the third-party components listed below which are
+ * subject to different license terms. Your integration of TencentOS into your
+ * own projects may require compliance with the BSD 3-Clause License, as well
+ * as the other licenses applicable to the third-party components included
+ * within TencentOS.
+ *---------------------------------------------------------------------------*/
+
 #ifndef _TOS_EVTDRV_EVENT_H_
 #define  _TOS_EVTDRV_EVENT_H_
 
@@ -51,9 +68,9 @@ __API__ evtdrv_err_t tos_evtdrv_event_set(evtdrv_task_id_t task_id, evtdrv_event
  */
 __API__ evtdrv_err_t tos_evtdrv_event_reset(evtdrv_task_id_t task_id, evtdrv_event_flag_t event_flags);
 
-__KERNEL__ evtdrv_err_t evtdrv_event_init(void);
+__KNL__ evtdrv_err_t evtdrv_event_init(void);
 
-__KERNEL__ evtdrv_event_flag_t evtdrv_event_fetch(evtdrv_task_id_t *task_id);
+__KNL__ evtdrv_event_flag_t evtdrv_event_fetch(evtdrv_task_id_t *task_id);
 
 __STATIC_INLINE__ evtdrv_bool_t evtdrv_event_is_usr(evtdrv_event_flag_t event_flag)
 {

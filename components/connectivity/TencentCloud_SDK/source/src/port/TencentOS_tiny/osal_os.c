@@ -15,7 +15,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "tos.h"
+#include "tos_k.h"
 #include "qcloud.h"
 
 __QCLOUD_OSAL__ void osal_printf(const char *fmt, ...)
@@ -49,6 +49,10 @@ __QCLOUD_OSAL__ void *osal_mutex_create(void)
     k_mutex_t *mutex;
 
     mutex = (k_mutex_t *)osal_malloc(sizeof(k_mutex_t));
+    if (!mutex) {
+        return K_NULL;
+    }
+
     tos_mutex_create(mutex);
 
     return (void *)mutex;

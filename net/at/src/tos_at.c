@@ -34,7 +34,7 @@ __STATIC__ int at_uart_getchar(uint8_t *data, k_tick_t timeout)
         return -1;
     }
 
-    err = tos_fifo_pop(&AT_AGENT->uart_rx_fifo, data);
+    err = tos_chr_fifo_pop(&AT_AGENT->uart_rx_fifo, data);
 
     tos_mutex_post(&AT_AGENT->uart_rx_lock);
 
@@ -305,7 +305,7 @@ __STATIC__ void at_parser(void *arg)
             at_echo_buffer_copy(recv_cache, at_echo);
         }
 
-        printf("--->%s\n", recv_cache->buffer);
+        tos_kprintln("--->%s", recv_cache->buffer);
     }
 }
 
@@ -347,7 +347,7 @@ __STATIC_INLINE__ void at_echo_flush(at_echo_t *echo)
     echo->__w_idx   = 0;
 }
 
-__STATIC_INLINE void at_echo_attach(at_echo_t *echo)
+__STATIC_INLINE__ void at_echo_attach(at_echo_t *echo)
 {
     at_echo_flush(echo);
     AT_AGENT->echo = echo;
@@ -549,7 +549,7 @@ __API__ int tos_at_channel_read(int channel_id, uint8_t *buffer, size_t buffer_l
             return total_read_len;
         }
 
-        read_len = tos_fifo_pop_stream(&data_channel->rx_fifo, buffer, buffer_len);
+        read_len = tos_chr_fifo_pop_stream(&data_channel->rx_fifo, buffer, buffer_len);
 
         tos_mutex_post(&data_channel->rx_lock);
 
@@ -587,7 +587,7 @@ __API__ int tos_at_channel_read_timed(int channel_id, uint8_t *buffer, size_t bu
             return total_read_len;
         }
 
-        read_len = tos_fifo_pop_stream(&data_channel->rx_fifo, buffer + read_len, buffer_len - total_read_len);
+        read_len = tos_chr_fifo_pop_stream(&data_channel->rx_fifo, buffer + read_len, buffer_len - total_read_len);
 
         tos_mutex_post(&data_channel->rx_lock);
 
@@ -616,7 +616,7 @@ __API__ int tos_at_channel_write(int channel_id, uint8_t *buffer, size_t buffer_
         return -1;
     }
 
-    ret = tos_fifo_push_stream(&data_channel->rx_fifo, buffer, buffer_len);
+    ret = tos_chr_fifo_push_stream(&data_channel->rx_fifo, buffer, buffer_len);
 
     tos_mutex_post(&data_channel->rx_lock);
 
@@ -637,7 +637,7 @@ __STATIC_INLINE__ int at_channel_construct(at_data_channel_t *data_channel, cons
     }
 
     data_channel->rx_fifo_buffer = fifo_buffer;
-    tos_fifo_create(&data_channel->rx_fifo, fifo_buffer, AT_DATA_CHANNEL_FIFO_BUFFER_SIZE);
+    tos_chr_fifo_create(&data_channel->rx_fifo, fifo_buffer, AT_DATA_CHANNEL_FIFO_BUFFER_SIZE);
     data_channel->remote_ip = ip;
     data_channel->remote_port = port;
 
@@ -702,7 +702,7 @@ __API__ int tos_at_channel_free(int channel_id)
     tos_mutex_destroy(&data_channel->rx_lock);
 
     tos_mmheap_free(data_channel->rx_fifo_buffer);
-    tos_fifo_destroy(&data_channel->rx_fifo);
+    tos_chr_fifo_destroy(&data_channel->rx_fifo);
 
     memset(data_channel, 0, sizeof(at_data_channel_t));
 
@@ -801,7 +801,7 @@ __API__ int tos_at_init(hal_uart_port_t uart_port, at_event_t *event_table, size
     }
 
     AT_AGENT->uart_rx_fifo_buffer = (uint8_t *)buffer;
-    tos_fifo_create(&AT_AGENT->uart_rx_fifo, (uint8_t *)buffer, AT_UART_RX_FIFO_BUFFER_SIZE);
+    tos_chr_fifo_create(&AT_AGENT->uart_rx_fifo, buffer, AT_UART_RX_FIFO_BUFFER_SIZE);
 
     buffer = tos_mmheap_alloc(AT_CMD_BUFFER_SIZE);
     if (!buffer) {
@@ -873,7 +873,7 @@ errout1:
 errout0:
     tos_mmheap_free(AT_AGENT->uart_rx_fifo_buffer);
     AT_AGENT->uart_rx_fifo_buffer = K_NULL;
-    tos_fifo_destroy(&AT_AGENT->uart_rx_fifo);
+    tos_chr_fifo_destroy(&AT_AGENT->uart_rx_fifo);
 
     return -1;
 }
@@ -900,16 +900,16 @@ __API__ void tos_at_deinit(void)
     tos_mmheap_free(AT_AGENT->uart_rx_fifo_buffer);
     AT_AGENT->uart_rx_fifo_buffer = K_NULL;
 
-    tos_fifo_destroy(&AT_AGENT->uart_rx_fifo);
+    tos_chr_fifo_destroy(&AT_AGENT->uart_rx_fifo);
 
     at_channel_deinit();
 }
 
 /* To completely decouple the uart intterupt and at agent, we need a more powerful
    hal(driver framework), that would be a huge work, we place it in future plans. */
-__API__ void tos_at_uart_write_byte(uint8_t data)
+__API__ void tos_at_uart_input_byte(uint8_t data)
 {
-    if (tos_fifo_push(&AT_AGENT->uart_rx_fifo, data) == K_ERR_NONE) {
+    if (tos_chr_fifo_push(&AT_AGENT->uart_rx_fifo, data) == K_ERR_NONE) {
         tos_sem_post(&AT_AGENT->uart_rx_sem);
     }
 }

@@ -1,3 +1,20 @@
+/*----------------------------------------------------------------------------
+ * Tencent is pleased to support the open source community by making TencentOS
+ * available.
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company. All rights reserved.
+ * If you have downloaded a copy of the TencentOS binary from Tencent, please
+ * note that the TencentOS binary is licensed under the BSD 3-Clause License.
+ *
+ * If you have downloaded a copy of the TencentOS source code from Tencent,
+ * please note that TencentOS source code is licensed under the BSD 3-Clause
+ * License, except for the third-party components listed below which are
+ * subject to different license terms. Your integration of TencentOS into your
+ * own projects may require compliance with the BSD 3-Clause License, as well
+ * as the other licenses applicable to the third-party components included
+ * within TencentOS.
+ *---------------------------------------------------------------------------*/
+
 #ifndef _TOS_EVTDRV_SYS_H_
 #define  _TOS_EVTDRV_SYS_H_
 
@@ -8,7 +25,7 @@ typedef void (*k_evtdrv_poll_t)(void);
 /**
  * @brief Initialize the event-driven system.
  *
- * @attention event-driven is a simplified schedule model to support the none-context-swith-based multi-task programming.("the big while 1")
+ * @attention event-driven is a simplified schedule model to support the none-context-switch-based multi-task programming.("the big while 1")
  * must enable TOS_CFG_MMHEAP_EN to use event-driven.
  *
  * @param[in]   tasks               array of the tasks.
